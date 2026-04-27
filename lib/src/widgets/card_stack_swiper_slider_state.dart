@@ -27,6 +27,18 @@ class _CardStackSwiperState extends State<CardStackSwiper>
       !widget.isLoop &&
       widget.emptyCardBuilder != null &&
       _allCardsSwiped;
+  int get _visibleStackCount {
+    if (_cardsCount <= 0) return 0;
+    if (_cardsCount == 1) return 1;
+    if (_cardsCount == 2) return 2;
+    return 3;
+  }
+
+  int get _maxBackCardLocalIndex => switch (_visibleStackCount) {
+        0 || 1 => 0,
+        2 => 2,
+        _ => 3,
+      };
 
   @override
   void initState() {
@@ -177,12 +189,8 @@ class _CardStackSwiperState extends State<CardStackSwiper>
         ? _getActualIndex(_currentIndex! + 1)
         : null;
     final bool isLastCard = !widget.isLoop && nextIndex == null;
-    final bool canSwipe = await widget.onSwipe?.call(
-          oldIndex,
-          nextIndex,
-          direction,
-        ) ??
-        true;
+    final bool canSwipe =
+        await widget.onSwipe?.call(oldIndex, nextIndex, direction) ?? true;
 
     if (!canSwipe) {
       if (!mounted) return;
@@ -220,12 +228,8 @@ class _CardStackSwiperState extends State<CardStackSwiper>
 
     final CardStackSwiperDirection lastDirection = _directionHistory.last;
     final int? oldIndex = _currentIndex;
-    final bool canUndo = widget.onUndo?.call(
-          oldIndex,
-          newIndex,
-          lastDirection,
-        ) ??
-        true;
+    final bool canUndo =
+        widget.onUndo?.call(oldIndex, newIndex, lastDirection) ?? true;
 
     if (!canUndo) return;
 
@@ -276,24 +280,44 @@ class _CardStackSwiperState extends State<CardStackSwiper>
       return _sliderSettings[status]!;
     }
 
-    return switch (localIndex) {
-      0 => getSettings(CardStackSwiperStatus.top),
-      1 => CardSettings.lerp(
-          getSettings(CardStackSwiperStatus.end),
-          getSettings(CardStackSwiperStatus.top),
-          t,
-        )!,
-      2 => CardSettings.lerp(
-          getSettings(CardStackSwiperStatus.start),
-          getSettings(CardStackSwiperStatus.end),
-          t,
-        )!,
-      3 => CardSettings.lerp(
-          getSettings(CardStackSwiperStatus.invisible),
-          getSettings(CardStackSwiperStatus.start),
-          t,
-        )!,
-      _ => getSettings(CardStackSwiperStatus.invisible),
+    return switch (_visibleStackCount) {
+      0 || 1 => switch (localIndex) {
+          0 => getSettings(CardStackSwiperStatus.top),
+          _ => getSettings(CardStackSwiperStatus.invisible),
+        },
+      2 => switch (localIndex) {
+          0 => getSettings(CardStackSwiperStatus.top),
+          1 => CardSettings.lerp(
+              getSettings(CardStackSwiperStatus.end),
+              getSettings(CardStackSwiperStatus.top),
+              t,
+            )!,
+          2 => CardSettings.lerp(
+              getSettings(CardStackSwiperStatus.invisible),
+              getSettings(CardStackSwiperStatus.end),
+              t,
+            )!,
+          _ => getSettings(CardStackSwiperStatus.invisible),
+        },
+      _ => switch (localIndex) {
+          0 => getSettings(CardStackSwiperStatus.top),
+          1 => CardSettings.lerp(
+              getSettings(CardStackSwiperStatus.end),
+              getSettings(CardStackSwiperStatus.top),
+              t,
+            )!,
+          2 => CardSettings.lerp(
+              getSettings(CardStackSwiperStatus.start),
+              getSettings(CardStackSwiperStatus.end),
+              t,
+            )!,
+          3 => CardSettings.lerp(
+              getSettings(CardStackSwiperStatus.invisible),
+              getSettings(CardStackSwiperStatus.start),
+              t,
+            )!,
+          _ => getSettings(CardStackSwiperStatus.invisible),
+        },
     };
   }
 
@@ -358,7 +382,7 @@ class _CardStackSwiperState extends State<CardStackSwiper>
   List<Widget> _buildBackCards(BoxConstraints constraints) {
     final List<Widget> cards = [];
 
-    for (int index = 3; index >= 1; index--) {
+    for (int index = _maxBackCardLocalIndex; index >= 1; index--) {
       if (_currentIndex != null &&
           (_currentIndex! + index < _cardsCount || widget.isLoop)) {
         cards.add(

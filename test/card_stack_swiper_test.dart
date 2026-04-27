@@ -1,4 +1,5 @@
 import 'package:card_stack_swiper/card_stack_swiper.dart';
+import 'package:card_stack_swiper/src/widgets/card_stack_swiper_item.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -6,6 +7,13 @@ import 'test_helpers/card_builder.dart';
 import 'test_helpers/finders.dart';
 import 'test_helpers/gestures.dart';
 import 'test_helpers/pump_app.dart';
+
+int countVisibleCards(WidgetTester tester) {
+  return tester
+      .widgetList<CardStackSwiperItem>(find.byType(CardStackSwiperItem))
+      .where((item) => item.settings.visibility > 0)
+      .length;
+}
 
 void main() {
   group('CardStackSwiper', () {
@@ -24,25 +32,27 @@ void main() {
     });
 
     testWidgets(
-        'when initialIndex is defined expect the related card be on top',
-        (WidgetTester tester) async {
-      final swiperKey = GlobalKey();
-      const initialIndex = 7;
+      'when initialIndex is defined expect the related card be on top',
+      (WidgetTester tester) async {
+        final swiperKey = GlobalKey();
+        const initialIndex = 7;
 
-      await tester.pumpApp(
-        CardStackSwiper(
-          key: swiperKey,
-          cardsCount: 10,
-          cardBuilder: genericBuilder,
-          initialIndex: initialIndex,
-        ),
-      );
+        await tester.pumpApp(
+          CardStackSwiper(
+            key: swiperKey,
+            cardsCount: 10,
+            cardBuilder: genericBuilder,
+            initialIndex: initialIndex,
+          ),
+        );
 
-      expect(find.text(getIndexText(initialIndex)), findsOneWidget);
-    });
+        expect(find.text(getIndexText(initialIndex)), findsOneWidget);
+      },
+    );
 
-    testWidgets('when swiping right expect to see the next card',
-        (WidgetTester tester) async {
+    testWidgets('when swiping right expect to see the next card', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -54,14 +64,15 @@ void main() {
       );
 
       await tester.dragRight(swiperKey);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // CardStackSwiper shows multiple cards, so we expect to see Card 1
       expect(find.text('Card 1'), findsOneWidget);
     });
 
-    testWidgets('when swiping left expect to see the next card',
-        (WidgetTester tester) async {
+    testWidgets('when swiping left expect to see the next card', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -79,8 +90,9 @@ void main() {
       expect(find.text('Card 1'), findsOneWidget);
     });
 
-    testWidgets('when swiping up expect to see the next card',
-        (WidgetTester tester) async {
+    testWidgets('when swiping up expect to see the next card', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -98,8 +110,9 @@ void main() {
       expect(find.text('Card 1'), findsOneWidget);
     });
 
-    testWidgets('when swiping down expect to see the next card',
-        (WidgetTester tester) async {
+    testWidgets('when swiping down expect to see the next card', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -117,8 +130,9 @@ void main() {
       expect(find.text('Card 1'), findsOneWidget);
     });
 
-    testWidgets('when isDisabled is true expect to block swipes',
-        (WidgetTester tester) async {
+    testWidgets('when isDisabled is true expect to block swipes', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -131,14 +145,15 @@ void main() {
       );
 
       await tester.dragRight(swiperKey);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Should still see Card 0 when disabled
       expect(find.text('Card 0'), findsOneWidget);
     });
 
-    testWidgets('when isDisabled is false expect to allow swipes',
-        (WidgetTester tester) async {
+    testWidgets('when isDisabled is false expect to allow swipes', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -156,8 +171,9 @@ void main() {
       expect(find.text('Card 1'), findsOneWidget);
     });
 
-    testWidgets('when isLoop is true expect to loop the cards',
-        (WidgetTester tester) async {
+    testWidgets('when isLoop is true expect to loop the cards', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -169,22 +185,40 @@ void main() {
       );
 
       await tester.dragRight(swiperKey);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Should see Card 1 (front) and Card 0 (back)
-      expect(find.text('Card 1'), findsNWidgets(2));
-      expect(find.text('Card 0'), findsNWidgets(2));
+      expect(countVisibleCards(tester), 2);
+      expect(find.text('Card 1'), findsAtLeastNWidgets(1));
+      expect(find.text('Card 0'), findsAtLeastNWidgets(1));
 
       await tester.dragRight(swiperKey);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Should see Card 0 (front) and Card 1 (back) - looped
-      expect(find.text('Card 0'), findsNWidgets(2));
-      expect(find.text('Card 1'), findsNWidgets(2));
+      expect(countVisibleCards(tester), 2);
+      expect(find.text('Card 0'), findsAtLeastNWidgets(1));
+      expect(find.text('Card 1'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('when isLoop is false expect to not return to the first card',
-        (WidgetTester tester) async {
+    testWidgets(
+      'when only two cards are provided expect only two visible stack cards',
+      (WidgetTester tester) async {
+        final swiperKey = GlobalKey();
+
+        await tester.pumpApp(
+          CardStackSwiper(
+            key: swiperKey,
+            cardsCount: 2,
+            cardBuilder: genericBuilder,
+          ),
+        );
+
+        expect(countVisibleCards(tester), 2);
+      },
+    );
+
+    testWidgets('when isLoop is false expect to not return to the first card', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -209,8 +243,9 @@ void main() {
       expect(find.byType(Container), findsWidgets);
     });
 
-    testWidgets('when onSwipe is defined expect to call it on swipe',
-        (WidgetTester tester) async {
+    testWidgets('when onSwipe is defined expect to call it on swipe', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
       var isCalled = false;
 
@@ -233,27 +268,29 @@ void main() {
     });
 
     testWidgets(
-        'when onSwipe is defined and it returns false expect to not swipe',
-        (WidgetTester tester) async {
-      final swiperKey = GlobalKey();
+      'when onSwipe is defined and it returns false expect to not swipe',
+      (WidgetTester tester) async {
+        final swiperKey = GlobalKey();
 
-      await tester.pumpApp(
-        CardStackSwiper(
-          key: swiperKey,
-          cardsCount: 10,
-          cardBuilder: genericBuilder,
-          onSwipe: (oldIndex, currentIndex, direction) {
-            return false;
-          },
-        ),
-      );
+        await tester.pumpApp(
+          CardStackSwiper(
+            key: swiperKey,
+            cardsCount: 10,
+            cardBuilder: genericBuilder,
+            onSwipe: (oldIndex, currentIndex, direction) {
+              return false;
+            },
+          ),
+        );
 
-      // Just verify the widget exists (swipe may not work in tests)
-      expect(find.byType(CardStackSwiper), findsOneWidget);
-    });
+        // Just verify the widget exists (swipe may not work in tests)
+        expect(find.byType(CardStackSwiper), findsOneWidget);
+      },
+    );
 
-    testWidgets('when onEnd is defined expect to call it on end',
-        (WidgetTester tester) async {
+    testWidgets('when onEnd is defined expect to call it on end', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -275,8 +312,9 @@ void main() {
       expect(find.byType(CardStackSwiper), findsOneWidget);
     });
 
-    testWidgets('when swipes less than the threshold should go back',
-        (WidgetTester tester) async {
+    testWidgets('when swipes less than the threshold should go back', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
       await tester.pumpApp(
         CardStackSwiper(
@@ -293,33 +331,35 @@ void main() {
     });
 
     testWidgets(
-        'when isDisabled is true and tap on card expect to call onTapDisabled',
-        (WidgetTester tester) async {
-      final swiperKey = GlobalKey();
-      var isCalled = false;
+      'when isDisabled is true and tap on card expect to call onTapDisabled',
+      (WidgetTester tester) async {
+        final swiperKey = GlobalKey();
+        var isCalled = false;
 
-      await tester.pumpApp(
-        CardStackSwiper(
-          key: swiperKey,
-          cardsCount: 10,
-          cardBuilder: genericBuilder,
-          onTapDisabled: () {
-            isCalled = true;
-          },
-          isDisabled: true,
-        ),
-      );
+        await tester.pumpApp(
+          CardStackSwiper(
+            key: swiperKey,
+            cardsCount: 10,
+            cardBuilder: genericBuilder,
+            onTapDisabled: () {
+              isCalled = true;
+            },
+            isDisabled: true,
+          ),
+        );
 
-      await tester.tap(find.byKey(swiperKey));
-      await tester.pump();
+        await tester.tap(find.byKey(swiperKey));
+        await tester.pump();
 
-      expect(isCalled, true);
-    });
+        expect(isCalled, true);
+      },
+    );
   });
 
   group('emptyCardBuilder tests', () {
-    testWidgets('emptyCardBuilder property exists and can be set',
-        (WidgetTester tester) async {
+    testWidgets('emptyCardBuilder property exists and can be set', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -340,8 +380,9 @@ void main() {
       expect(find.byKey(swiperKey), findsOneWidget);
     });
 
-    testWidgets('does not show empty card when isLoop is true',
-        (WidgetTester tester) async {
+    testWidgets('does not show empty card when isLoop is true', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -361,8 +402,9 @@ void main() {
       expect(find.byKey(const Key('empty_card')), findsNothing);
     });
 
-    testWidgets('does not show empty card when emptyCardBuilder is null',
-        (WidgetTester tester) async {
+    testWidgets('does not show empty card when emptyCardBuilder is null', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
@@ -381,8 +423,9 @@ void main() {
   });
 
   group('Card swipe direction tests', () {
-    testWidgets('allowedSwipeDirection works without errors',
-        (WidgetTester tester) async {
+    testWidgets('allowedSwipeDirection works without errors', (
+      WidgetTester tester,
+    ) async {
       final swiperKey = GlobalKey();
 
       await tester.pumpApp(
