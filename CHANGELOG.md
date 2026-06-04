@@ -1,3 +1,16 @@
+## [1.1.2]
+
+### Fixed
+
+- Fixed stacked preview depth when the swiper has only **two cards**. Previously, the widget always built a four-layer stack (top card plus three back layers). With `cardsCount: 2` and `isLoop: true`, the same card could appear multiple times in the stack, which looked like duplicate previews behind the front card.
+- Stack depth and card settings now adapt to `cardsCount`: one card shows only the top layer; two cards show two visible previews plus a hidden slot used for smooth loop transitions; three or more cards keep the original four-layer behavior.
+- Contributed by [@zeewell](https://github.com/zeewell) in [#1](https://github.com/Politanskyi/card_stack_swiper/pull/1). Thank you for the fix and the regression tests!
+
+### Added
+
+- Regression test ensuring only two stack cards are visible when `cardsCount` is 2.
+- Updated loop-mode widget tests to assert visible card count instead of duplicate widget instances.
+
 ## [1.1.1]
 
 ### Added
