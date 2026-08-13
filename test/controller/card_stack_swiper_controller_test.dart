@@ -1,7 +1,7 @@
 import 'package:card_stack_swiper/card_stack_swiper.dart';
 import 'package:card_stack_swiper/src/controller/controller_event.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../test_helpers/card_builder.dart';
 import '../test_helpers/pump_app.dart';
